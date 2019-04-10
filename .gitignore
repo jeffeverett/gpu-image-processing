@@ -1,0 +1,7 @@
+*.jpg
+README
+hw10
+Build
+.vscode
+cmake-build-debug
+.idea
