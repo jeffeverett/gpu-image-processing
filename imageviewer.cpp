@@ -53,7 +53,8 @@ ImageViewer::ImageViewer()
 
     resize(QGuiApplication::primaryScreen()->availableSize() * 3 / 5);
 
-    Processor::InitGPU(true);
+    Processor::InitCUDA(true);
+    Processor::InitOpenCL(true);
 }
 
 
@@ -231,20 +232,26 @@ void ImageViewer::fitToWindow()
 
 void ImageViewer::modifyClicked()
 {
-    QImage finalImageCPU;
+    QImage finalImageOpenMP;
     QImage finalImageCUDA;
+    QImage finalImageOpenCL;
+
+    qint64 nsElapsedOpenMP;
+    qint64 nsElapsedCUDA;
+    qint64 nsElapsedOpenCL;
+
 
     QElapsedTimer timer;
     timer.start();
     switch (modificationComboBox->currentIndex()) {
         case 0:
-            finalImageCPU = Processor::blurImageOpenMP(initialImage);
+            finalImageOpenMP = Processor::blurImageOpenMP(initialImage);
             break;
         case 1:
-            finalImageCPU = Processor::invertImageOpenMP(initialImage);
+            finalImageOpenMP = Processor::invertImageOpenMP(initialImage);
             break;
     }
-    qint64 nsElapsedCPU = timer.nsecsElapsed();
+    nsElapsedOpenMP = timer.nsecsElapsed();
 
     timer.start();
     switch (modificationComboBox->currentIndex()) {
@@ -255,18 +262,38 @@ void ImageViewer::modifyClicked()
             finalImageCUDA = Processor::invertImageCUDA(initialImage);
             break;
     }
-    qint64 nsElapsedCUDA = timer.nsecsElapsed();
+    nsElapsedCUDA = timer.nsecsElapsed();
 
-    // Ensure the two images are the same
-    unsigned long numBytes = finalImageCPU.bytesPerLine()*finalImageCPU.height();
-    if (memcmp((void*)finalImageCPU.bits(), (void*)finalImageCUDA.bits(), numBytes) != 0) {
-        const QString text = tr("Err: The CPU image does not match the GPU image. Showing the CPU image on the left and the GPU image on the right.");
+    timer.start();
+    switch (modificationComboBox->currentIndex()) {
+        case 0:
+            finalImageOpenCL = Processor::blurImageOpenCL(initialImage);
+            break;
+        case 1:
+            finalImageOpenCL = Processor::invertImageOpenCL(initialImage);
+            break;
+    }
+    nsElapsedOpenCL = timer.nsecsElapsed();
+
+    // Ensure the three images are the same
+    unsigned long numBytes = finalImageOpenMP.bytesPerLine()*finalImageOpenMP.height();
+    if (memcmp((void*)finalImageOpenMP.bits(), (void*)finalImageCUDA.bits(), numBytes) != 0) {
+        const QString text = tr("Err: The OpenMP image does not match the CUDA image. Showing the OpenMP image on the left and the CUDA image on the right.");
         timingInfoLabel->setText(text);
-        setInitialImage(finalImageCPU);
+        setInitialImage(finalImageOpenMP);
         setFinalImage(finalImageCUDA);
     }
+    else if (memcmp((void*)finalImageCUDA.bits(), (void*)finalImageOpenCL.bits(), numBytes) != 0) {
+        const QString text = tr("Err: The CUDA image does not match the OpenCL image. Showing the CUDA image on the left and the OpenCL image on the right.");
+        timingInfoLabel->setText(text);
+        setInitialImage(finalImageCUDA);
+        setFinalImage(finalImageOpenCL);
+    }
     else {
-        const QString text = tr("CPU took %1 ms\nCUDA took %2 ms").arg(nsElapsedCPU/(float)1e6).arg(nsElapsedCUDA/(float)1e6);
+        const QString text = tr("OpenMP took %1 ms\nCUDA took %2 ms\nOpenCL took %3 ms")
+            .arg(nsElapsedOpenMP/(float)1e6)
+            .arg(nsElapsedCUDA/(float)1e6)
+            .arg(nsElapsedOpenCL/(float)1e6);
         timingInfoLabel->setText(text);
         setFinalImage(finalImageCUDA);
     }

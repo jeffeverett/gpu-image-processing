@@ -12,6 +12,7 @@ list(APPEND CUDA_NVCC_FLAGS "--compiler-options -fopenmp")
 # Find the QtWidgets library
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(OpenCL REQUIRED)
 
 # Populate a CMake variable with the sources
 file(GLOB hw10_srcs
@@ -28,3 +29,4 @@ target_compile_features(hw10 PUBLIC cxx_std_11)
 # Link needed libraries
 target_link_libraries(hw10 Qt5::Widgets)
 target_link_libraries(hw10 gomp)
+target_link_libraries(hw10 OpenCL::OpenCL)
