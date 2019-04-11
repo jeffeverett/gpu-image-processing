@@ -189,41 +189,7 @@ __global__ void invertKernel(const unsigned char originalImage[], unsigned char 
 
 QImage Processor::blurImage(const QImage &image)
 {
-    unsigned long numBytes = image.bytesPerLine()*image.height();
-
-    // Allocate memory for image on GPU
-    unsigned char *initialImageD;
-    unsigned char *finalImageD;
-    if (cudaMalloc((void**)&initialImageD, numBytes))
-        Fatal("Cannot allocate space for initial image on device.\n");
-    if (cudaMalloc((void**)&finalImageD, numBytes))
-        Fatal("Cannot allocate space for modified image on device.\n");
-
-    // Copy initial image from host to device
-    if (cudaMemcpy(initialImageD, image.bits(), numBytes, cudaMemcpyHostToDevice))
-        Fatal("Cannot transfer initial image from host to device.\n");
-
-    // Execute kernel
-    dim3 blockSize(maxThreadsPerBlock, 1, 1);
-    dim3 gridSize(ceil(image.width()*image.height()/((float)maxThreadsPerBlock)), 1, 1);
-    blurKernel<<<gridSize, blockSize>>>(initialImageD, finalImageD, image.width(), image.height());
-    cudaDeviceSynchronize();
-    cudaError_t err = cudaGetLastError();
-    if (err) Fatal("blurKernel failure: %s\n", cudaGetErrorString(err));
-
-    // Copy modified image from device to host
-    unsigned char *finalImageH = (unsigned char*)aligned_alloc(32, numBytes);
-    if (cudaMemcpy(finalImageH, finalImageD, numBytes, cudaMemcpyDeviceToHost))
-        Fatal("Cannot transfer modified image from device to host.\n");
-
-    // Free device memory
-    cudaFree(initialImageD);
-    cudaFree(finalImageD);
-
-
-    // Construct image from binary data
-    QImage finalImage(finalImageH, image.width(), image.height(), image.format());
-    return finalImage;
+    return processWithCUDA(image, blurKernel);
 }
 
 QImage Processor::blurImageCPU(const QImage &image)
@@ -247,6 +213,12 @@ QImage Processor::blurImageCPU(const QImage &image)
 
 QImage Processor::invertImage(const QImage &image)
 {
+    return processWithCUDA(image, invertKernel);
+}
+
+QImage Processor::processWithCUDA(const QImage &image,
+    void (*kernel)(const unsigned char originalImage[], unsigned char blurredImage[], unsigned int width, unsigned int height))
+{
     unsigned long numBytes = image.bytesPerLine()*image.height();
 
     // Allocate memory for image on GPU
@@ -264,10 +236,10 @@ QImage Processor::invertImage(const QImage &image)
     // Execute kernel
     dim3 blockSize(maxThreadsPerBlock, 1, 1);
     dim3 gridSize(ceil(image.width()*image.height()/((float)maxThreadsPerBlock)), 1, 1);
-    invertKernel<<<gridSize, blockSize>>>(initialImageD, finalImageD, image.width(), image.height());
+    kernel<<<gridSize, blockSize>>>(initialImageD, finalImageD, image.width(), image.height());
     cudaDeviceSynchronize();
     cudaError_t err = cudaGetLastError();
-    if (err) Fatal("invertKernel failure: %s\n", cudaGetErrorString(err));
+    if (err) Fatal("kernel failure: %s\n", cudaGetErrorString(err));
 
     // Copy modified image from device to host
     unsigned char *finalImageH = (unsigned char*)aligned_alloc(32, numBytes);
