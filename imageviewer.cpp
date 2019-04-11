@@ -84,8 +84,8 @@ void ImageViewer::setInitialImage(const QImage &initialImage)
 {
     this->initialImage = initialImage;
 
-    // Invoke a kernel as soon as image is loaded, because first kernel is always slower
-    Processor::blurImage(initialImage);
+    // Invoke a CUDA kernel as soon as image is loaded, because first kernel is always slower
+    Processor::blurImageCUDA(initialImage);
 
     initialImageLabel->setPixmap(QPixmap::fromImage(initialImage));
     scaleFactor = 1.0;
@@ -238,10 +238,10 @@ void ImageViewer::modifyClicked()
     timer.start();
     switch (modificationComboBox->currentIndex()) {
         case 0:
-            finalImageCPU = Processor::blurImageCPU(initialImage);
+            finalImageCPU = Processor::blurImageOpenMP(initialImage);
             break;
         case 1:
-            finalImageCPU = Processor::invertImageCPU(initialImage);
+            finalImageCPU = Processor::invertImageOpenMP(initialImage);
             break;
     }
     qint64 nsElapsedCPU = timer.nsecsElapsed();
@@ -249,10 +249,10 @@ void ImageViewer::modifyClicked()
     timer.start();
     switch (modificationComboBox->currentIndex()) {
         case 0:
-            finalImageCUDA = Processor::blurImage(initialImage);
+            finalImageCUDA = Processor::blurImageCUDA(initialImage);
             break;
         case 1:
-            finalImageCUDA = Processor::invertImage(initialImage);
+            finalImageCUDA = Processor::invertImageCUDA(initialImage);
             break;
     }
     qint64 nsElapsedCUDA = timer.nsecsElapsed();

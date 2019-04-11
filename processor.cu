@@ -187,12 +187,33 @@ __global__ void invertKernel(const unsigned char originalImage[], unsigned char 
     invertPixel(originalImage, invertedImage, width, height, row, col);
 }
 
-QImage Processor::blurImage(const QImage &image)
+// Image blur methods
+QImage Processor::blurImageOpenMP(const QImage &image)
+{
+    return processWithOpenMP(image, blurPixel);
+}
+
+QImage Processor::blurImageCUDA(const QImage &image)
 {
     return processWithCUDA(image, blurKernel);
 }
 
-QImage Processor::blurImageCPU(const QImage &image)
+// Image inversion methods
+QImage Processor::invertImageOpenMP(const QImage &image)
+{
+    return processWithOpenMP(image, invertPixel);
+}
+
+QImage Processor::invertImageCUDA(const QImage &image)
+{
+    return processWithCUDA(image, invertKernel);
+}
+
+
+// Processing/setup methods
+QImage Processor::processWithOpenMP(const QImage &image,
+    void (*perPixelKernel)(const unsigned char originalImage[], unsigned char blurredImage[],
+        unsigned int width, unsigned int height, unsigned int row, unsigned int col))
 {
     // Allocate memory for new image
     unsigned long numBytes = image.bytesPerLine()*image.height();
@@ -200,20 +221,16 @@ QImage Processor::blurImageCPU(const QImage &image)
 
     // Calculate the modified version of each pixel
     const uchar *imageBits = image.bits();
+    #pragma omp parallel for
     for (int i = 0; i < image.height(); i++) {
         for (int j = 0; j < image.width(); j++) {
-            blurPixel(imageBits, finalImageBin, image.width(), image.height(), i, j);
+            perPixelKernel(imageBits, finalImageBin, image.width(), image.height(), i, j);
         }
     }
 
     // Construct image from binary data
     QImage finalImage(finalImageBin, image.width(), image.height(), image.format());
     return finalImage;
-}
-
-QImage Processor::invertImage(const QImage &image)
-{
-    return processWithCUDA(image, invertKernel);
 }
 
 QImage Processor::processWithCUDA(const QImage &image,
@@ -255,27 +272,6 @@ QImage Processor::processWithCUDA(const QImage &image,
     QImage finalImage(finalImageH, image.width(), image.height(), image.format());
     return finalImage;
 }
-
-QImage Processor::invertImageCPU(const QImage &image)
-{
-    // Allocate memory for new image
-    unsigned long numBytes = image.bytesPerLine()*image.height();
-    unsigned char *finalImageBin = (unsigned char*)aligned_alloc(32, numBytes);
-
-    // Calculate the modified version of each pixel
-    const uchar *imageBits = image.bits();
-    #pragma omp parallel for
-    for (int i = 0; i < image.height(); i++) {
-        for (int j = 0; j < image.width(); j++) {
-            invertPixel(imageBits, finalImageBin, image.width(), image.height(), i, j);
-        }
-    }
-
-    // Construct image from binary data
-    QImage finalImage(finalImageBin, image.width(), image.height(), image.format());
-    return finalImage;
-}
-
 
 void Processor::InitGPU(bool verbose)
 {
