@@ -1,5 +1,5 @@
 # Introduction
-This programs implements image processing techniques on the CPU and the GPU and compares their performance.
+This programs implements image processing techniques using OpenMP, CUDA, and OpenCL and then compares their performance.
 
 Specifically, there are two supported operations: image blur and image inversion. The image blur operation is a
 simple averaging of all bordering pixels, and the image inversion inverts each individual pixel.
@@ -13,9 +13,9 @@ To build and run:
 
 # Program Usage
 To use the program:
-1.) `File`->`Open` and select an image. The selected image will be placed on the left.
-2.) Select the desired image processing operation from the dropdown menu.
-3.) Click the `Modify` button. This will process the image with each implementation (i.e., OpenMP, CUDA, and OpenCL),
+1. `File`->`Open` and select an image. The selected image will be placed on the left.
+2. Select the desired image processing operation from the dropdown menu.
+3. Click the `Modify` button. This will process the image with each implementation (i.e., OpenMP, CUDA, and OpenCL),
     place the result on the right, and then add text at the bottom of the screen indicating the execution time of each
     implementation.
 
