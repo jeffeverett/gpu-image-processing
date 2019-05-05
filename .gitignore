@@ -5,3 +5,4 @@ Build
 cmake-build-debug
 .idea
 *.pptx
+*.pptx#
