@@ -1,6 +1,6 @@
-.PHONY: hw10
+.PHONY: gpu-image-processing
 
-hw10:
+gpu-image-processing:
 	mkdir -p Build
 	cd Build; cmake -DCMAKE_BUILD_TYPE=Debug ..; make
-	cp Build/hw10 ./hw10
+	cp Build/gpu-image-processing ./gpu-image-processing

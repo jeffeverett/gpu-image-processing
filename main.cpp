@@ -1,7 +1,3 @@
-//
-//  Hw10:  OpenCL
-//
-
 #include <QApplication>
 #include "imageviewer.hpp"
 

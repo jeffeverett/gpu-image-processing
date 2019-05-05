@@ -1,6 +1,6 @@
 *.jpg
 README
-hw10
+gpu-image-processing
 Build
 .vscode
 cmake-build-debug

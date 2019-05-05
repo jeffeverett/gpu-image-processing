@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(hw10)
+project(gpu-image-processing)
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -15,18 +15,18 @@ find_package(CUDA REQUIRED)
 find_package(OpenCL REQUIRED)
 
 # Populate a CMake variable with the sources
-file(GLOB hw10_srcs
+file(GLOB gpu-image-processing_srcs
     "*.hpp"
     "*.cpp"
     "*.cu"
 )
 # Tell CMake to create the executable
-cuda_add_executable(hw10 ${hw10_srcs})
-set_target_properties(hw10
+cuda_add_executable(gpu-image-processing ${gpu-image-processing_srcs})
+set_target_properties(gpu-image-processing
     PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-target_compile_features(hw10 PUBLIC cxx_std_11)
+target_compile_features(gpu-image-processing PUBLIC cxx_std_11)
 
 # Link needed libraries
-target_link_libraries(hw10 Qt5::Widgets)
-target_link_libraries(hw10 gomp)
-target_link_libraries(hw10 OpenCL::OpenCL)
+target_link_libraries(gpu-image-processing Qt5::Widgets)
+target_link_libraries(gpu-image-processing gomp)
+target_link_libraries(gpu-image-processing OpenCL::OpenCL)
